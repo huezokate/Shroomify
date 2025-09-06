@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MycoGuide - Your Mushroom Growing Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #2d5016;
+            --secondary-green: #3e6b1f;
+            --accent-green: #4a7c23;
+            --light-green: #6b8e3d;
+            --bg-overlay: rgba(255, 255, 255, 0.95);
+            --shadow-light: 0 4px 15px rgba(0,0,0,0.1);
+            --shadow-heavy: 0 8px 30px rgba(0,0,0,0.2);
+            --border-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 50%, var(--accent-green) 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Background pattern overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 25%),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 25%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .app-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        .app-header h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            letter-spacing: -0.02em;
+        }
+
+        .app-header .subtitle {
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            opacity: 0.9;
+            font-weight: 300;
+            margin-bottom: 8px;
+        }
+
+        .app-header .version {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* Navigation */
+        .main-nav {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .nav-button {
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 20px 16px;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-button:hover::before {
+            left: 100%;
+        }
+
+        .nav-button:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-heavy);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .nav-button.active {
+            background: rgba(255,255,255,0.3);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+            transform: translateY(1px);
+        }
+
+        .nav-button .icon {
+            font-size: 1.5em;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Main Content Area */
+        .content-container {
+            background: var(--bg-overlay);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-heavy);
+            border: 1px solid rgba(255,255,255,0.3);
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .page-content {
+            display: none;
+            padding: 40px;
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .page-header h2 {
+            font-size: 2.2rem;
+            color: var(--primary-green);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* Species Grid */
+        .species-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .species-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .species-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-green), var(--accent-green));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .species-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .species-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-heavy);
+            border-color: var(--light-green);
+        }
+
+        .species-card .mushroom-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .species-card h3 {
+            color: var(--primary-green);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .difficulty-beginner { 
+            background: linear-gradient(135deg, #4CAF50, #45a049); 
+            color: white; 
+        }
+        .difficulty-intermediate { 
+            background: linear-gradient(135deg, #FF9800, #f57c00); 
+            color: white; 
+        }
+        .difficulty-advanced { 
+            background: linear-gradient(135deg, #f44336, #d32f2f); 
+            color: white; 
+        }
+
+        .species-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            color: var(--primary-green);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Methods Page */
+        .methods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .method-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+        }
+
+        .method-header {
+            background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .method-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .method-header .icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .method-steps {
+            padding: 24px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .step-number {
+            background: var(--primary-green);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            color: var(--primary-green);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .step-content p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* Environment Controls */
+        .environment-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            border: 1px solid #e9ecef;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-green), var(--accent-green));
+        }
+
+        .control-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            color: var(--accent-green);
+        }
+
+        .control-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: 12px;
+        }
+
+        .control-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--secondary-green);
+            margin-bottom: 12px;
+        }
+
+        .control-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Troubleshooting */
+        .troubleshoot-grid {
+            display: grid;
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        .issue-category {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+        }
+
+        .category-header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        .category-header .icon {
+            font-size: 1.8rem;
+            margin-right: 12px;
+        }
+
+        .category-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .issues-list {
+            padding: 24px;
+        }
+
+        .issue-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .issue-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .issue-title {
+            color: var(--primary-green);
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .issue-cause {
+            color: #dc3545;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .issue-solution {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .issue-description {
+            color: #666;
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+
+        /* Tips Section */
+        .tips-section {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin: 30px 0;
+            border-left: 5px solid #ffc107;
+        }
+
+        .tips-section h3 {
+            color: #856404;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .tips-section h3 .icon {
+            margin-right: 8px;
+        }
+
+        .tips-list {
+            list-style: none;
+        }
+
+        .tips-list li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        .tips-list li::before {
+            content: '💡';
+            position: absolute;
+            left: 0;
+            top: 8px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 3% auto;
+            padding: 0;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+            color: white;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .close-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+            
+            .page-content {
+                padding: 20px;
+            }
+            
+            .species-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .methods-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .environment-dashboard {
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .environment-dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .species-stats {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- App Header -->
+        <header class="app-header">
+            <h1>🍄 MycoGuide</h1>
+            <p class="subtitle">Your Complete Mushroom Growing Companion</p>
+            <span class="version">v1.0 Beta</span>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav class="main-nav">
+            <button class="nav-button active" onclick="showPage('species')" data-page="species">
+                <span class="icon">🍄</span>
+                <span>Species Guide</span>
+            </button>
+            <button class="nav-button" onclick="showPage('methods')" data-page="methods">
+                <span class="icon">🔬</span>
+                <span>Growing Methods</span>
+            </button>
+            <button class="nav-button" onclick="showPage('environment')" data-page="environment">
+                <span class="icon">🌡️</span>
+                <span>Environment</span>
+            </button>
+            <button class="nav-button" onclick="showPage('troubleshooting')" data-page="troubleshooting">
+                <span class="icon">🔧</span>
+                <span>Troubleshooting</span>
+            </button>
+        </nav>
+
+        <!-- Main Content Container -->
+        <main class="content-container">
+            <!-- Species Guide Page -->
+            <div id="species" class="page-content active">
+                <div class="page-header">
+                    <h2>Mushroom Species Guide</h2>
+                    <p>Discover the perfect mushroom species for your growing experience level. From beginner-friendly oyster mushrooms to advanced reishi cultivation.</p>
+                </div>
+
+                <div class="species-grid">
+                    <div class="species-card" onclick="openSpeciesModal('oyster')">
+                        <span class="mushroom-icon">🦪</span>
+                        <h3>Oyster Mushrooms</h3>
+                        <span class="difficulty-badge difficulty-beginner">Beginner</span>
+                        <p>Fast-growing, forgiving, and delicious. Perfect for first-time growers with excellent success rates.</p>
+                        
+                        <div class="species-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Harvest Time</div>
+                                <div class="stat-value">7-14 days</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Success Rate</div>
+                                <div class="stat-value">95%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="species-card" onclick="openSpeciesModal('shiitake')">
+                        <span class="mushroom-icon">🍄</span>
+                        <h3>Shiitake</h3>
+                        <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+                        <p>Premium mushrooms with rich, smoky flavor and excellent nutritional profile. Requires attention to detail.</p>
+                        
+                        <div class="species-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Harvest Time</div>
+                                <div class="stat-value">2-4 weeks</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Success Rate</div>
+                                <div class="stat-value">75%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="species-card" onclick="openSpeciesModal('lions-mane')">
+                        <span class="mushroom-icon">🦁</span>
+                        <h3>Lion's Mane</h3>
+                        <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+                        <p>Unique cascading appearance with potential cognitive benefits. Seafood-like texture when cooked.</p>
+                        
+                        <div class="species-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Harvest Time</div>
+                                <div class="stat-value">2-3 weeks</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Success Rate</div>
+                                <div class="stat-value">70%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="species-card" onclick="openSpeciesModal('reishi')">
+                        <span class="mushroom-icon">🔴</span>
+                        <h3>Reishi</h3>
+                        <span class="difficulty-badge difficulty-advanced">Advanced</span>
+                        <p>The legendary "mushroom of immortality". Requires patience, precision, and advanced techniques.</p>
+                        
+                        <div class="species-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Harvest Time</div>
+                                <div class="stat-value">6-8 weeks</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Success Rate</div>
+                                <div class="stat-value">45%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tips-section">
+                    <h3><span class="icon">🌟</span>Beginner Tips</h3>
+                    <ul class="tips-list">
+                        <li>Start with oyster mushrooms for your first grow - they're very forgiving</li>
+                        <li>Success rates improve dramatically with proper sterile technique</li>
+                        <li>Temperature control is more important than most beginners realize</li>
+                        <li>Don't rush the process - patience leads to better yields</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Growing Methods Page -->
+            <div id="methods" class="page-content">
+                <div class="page-header">
+                    <h2>Growing Methods</h2>
+                    <p>Master the fundamental techniques for successful mushroom cultivation. Choose the method that matches your experience level and available resources.</p>
+                </div>
+
+                <div class="methods-grid">
+                    <div class="method-card">
+                        <div class="method-header">
+                            <div class="icon">🥤</div>
+                            <h3>Liquid Culture</h3>
+                            <p>Ideal for propagating mushroom spawn quickly</p>
+                        </div>
+                        <div class="method-steps">
+                            <div class="step-item">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>Prepare Nutrient Solution</h4>
+                                    <p>Mix 4% honey or malt extract with distilled water. This provides nutrients for mycelium growth.</p>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>Sterilize Solution</h4>
+                                    <p>Pressure cook at 15 PSI for 15 minutes, or steam sterilize to eliminate contaminants.</p>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>Inoculate Culture</h4>
+                                    <p>Add mushroom spores or tissue culture under sterile conditions using proper technique.</p>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <h4>Incubate & Monitor</h4>
+                                    <p>Store at species-specific temperature (65-75°F typically) for 1-2 weeks until cloudy.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-card">
+                        <div class="method-header">
+                            <div class="icon">🌾</div>
+                            <h3>Substrate Preparation</h3>
+                            <p>The foundation of successful mushroom cultivation</p>
+                        </div>
+                        <div class="method-steps">
+                            <div class="step-item">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>Select Substrate</h4>
+                                    <p>Choose appropriate material: straw, sawdust, coffee grounds, or commercial mix based on species.</p>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>Pasteurize Substrate</h4>
+                                    <p>Heat treat to 160-180°F for 1-2 hours to eliminate competing microorganisms.</p>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>Cool & Inoculate</h4>
+                                    <p>Allow to cool to room temperature, then thoroughly mix with mushroom spawn.</p>
+                                </div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <h4>Colonization Phase</h4>
+                                    <p>Maintain optimal humidity and temperature while mycelium spreads throughout substrate.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tips-section">
+                    <h3><span class="icon">🔬</span>Advanced Techniques</h3>
+                    <ul class="tips-list">
+                        <li>Always use a pressure cooker when possible for sterilization</li>
+                        <li>Work in a still air box or laminar flow hood to prevent contamination</li>
+                        <li>pH test your substrate - most mushrooms prefer slightly acidic conditions</li>
+                        <li>Keep detailed notes of temperatures, timing, and results for future grows</li>
+                    
